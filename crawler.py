@@ -49,6 +49,45 @@ def get_data_from_api(articles) :
     return urls, ids
 
 
+
+# crawling body of article using beautifulsoup
+# output type is list
+def crawling_article_body(idx) :
+    result = []
+
+    result.append(id_list[idx])
+
+    html = requests.get(url_list[idx]).content
+    soup = BeautifulSoup(html, "lxml")
+
+    result_head = soup.find("h1")
+    results_summary = soup.find("p", id="article-summary")
+    result_date = soup.find("span", class_="css-1sbuyqj e16638kd3")
+    results_article = soup.find_all("p", class_="css-axufdj evys1bk0")
+
+    result.append(result_head.text)
+    
+    # Some articles does not have summary and date. So make exception.
+    try :
+        result.append(results_summary.text)
+    except :
+        result.append(None)
+
+    try : 
+        result.append(result_date.text)
+    except :
+        result.append(None)
+
+    body = ""
+    for i in results_article :
+        body += i.text
+    result.append(body)
+
+    return result
+
+
+
+# make time list using start date and end date 
 def date_delta(start, end) :
     time_container = [] 
     i = 0
@@ -69,7 +108,6 @@ def date_delta(start, end) :
 
 
 
-
 if __name__ == "__main__" : 
 
     # Authorize 
@@ -85,8 +123,8 @@ if __name__ == "__main__" :
         previous_id = []
     
     # Set date
-    start_date = datetime.date(2021, 1, 1)
-    end_date = datetime.date(2022, 1, 1)
+    start_date = datetime.date(2019, 1, 1)
+    end_date = datetime.date(2020, 1, 1)
     timelist = date_delta(start_date, end_date)
 
     # Save URL of ariticles 
@@ -106,38 +144,7 @@ if __name__ == "__main__" :
 
         # Crawling main contents in articles 
         for idx in range(len(url_list)) :
-            result = []
-
-            result.append(id_list[idx])
-
-            html = requests.get(url_list[idx]).content
-            soup = BeautifulSoup(html, "lxml")
-
-            result_head = soup.find("h1")
-            results_summary = soup.find("p", id="article-summary")
-            result_date = soup.find("span", class_="css-1sbuyqj e16638kd3")
-            results_article = soup.find_all("p", class_="css-axufdj evys1bk0")
-
-            result.append(result_head.text)
-            
-            # Some articles does not have summary and date. So make exception.
-            try :
-                result.append(results_summary.text)
-            except :
-                result.append(None)
-
-            try : 
-                result.append(result_date.text)
-            except :
-                result.append(None)
-
-            body = ""
-            for i in results_article :
-                body += i.text
-            result.append(body)
-
-            results.append(result)
-
+            results.append(crawling_article_body(idx))
 
     results = pd.DataFrame(results, columns=['id', 'title', 'summary',  'date', 'body'])
     
